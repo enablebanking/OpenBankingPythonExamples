@@ -68,9 +68,9 @@ def main():
     payment_request_confirmation = pisp_api.make_payment_request_confirmation(
         request_creation.payment_request_resource_id,
         confirmation=enablebanking.PaymentRequestConfirmation(
-            psu_authentication_factor=parsed_query_params.get("code")
-        ),
-        payment_request_data=payment_request_resource)
+            psu_authentication_factor=parsed_query_params.get("code"),
+            payment_request=payment_request_resource
+        ))
     logging.info("Payment request confirmation: %s", payment_request_confirmation)
 
 
