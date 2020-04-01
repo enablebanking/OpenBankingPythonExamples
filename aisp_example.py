@@ -19,7 +19,7 @@ def nordea_settings():
         "sandbox": True,
         "consentId": None,
         "accessToken": None,
-        "refreshToken": None,
+        "redirectUri": REDIRECT_URL,
         "language": "fi"
     }
 
@@ -29,20 +29,14 @@ def main():
 
     auth_api = enablebanking.AuthApi(api_client)  # Create authentication interface.
 
-    auth_url = auth_api.get_auth(
-        response_type="code",  # OAuth2 response type
-        redirect_uri=REDIRECT_URL,  # redirect URI
-        scope=["aisp"],  # API scopes
-        state="test").url  # state to pass to redirect URL
+    auth_url = auth_api.get_auth(state="test").url  # state to pass to redirect URL
 
     redirected_url = util.read_redirected_url(auth_url, REDIRECT_URL)
     parsed_query = util.parse_redirected_url(redirected_url)  # calling helper functions for CLI interaction
     logging.info("Parsed query: %s", parsed_query)
 
     token = auth_api.make_token(grant_type="authorization_code",  # grant type, MUST be set to "authorization_code"
-                                code=parsed_query.get("code"),
-                                # The code received in the query string when redirected from authorization
-                                redirect_uri=REDIRECT_URL)
+                                code=parsed_query.get("code"))
     logging.info("Token: %s", token)
 
     aisp_api = enablebanking.AISPApi(api_client)  # api_client has already accessToken and refreshToken applied after call to makeToken()
