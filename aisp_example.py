@@ -2,8 +2,6 @@ import logging
 
 import enablebanking
 
-import util
-
 logging.getLogger().setLevel(logging.INFO)
 
 REDIRECT_URL = "https://enablebanking.com"  # PUT YOUR REDIRECT URI HERE
@@ -23,6 +21,14 @@ def nordea_settings():
         "language": "fi"
     }
 
+def read_redirected_url(url, redirect_url):
+    print("Please, open this page in browser: " + url)
+    print("Login, authenticate and copy paste back the URL where you got redirected.")
+    print(f"URL: (starts with %s): " % redirect_url)
+
+    redirected_url = input()  # insert your url
+    return redirected_url
+
 
 def main():
     api_client = enablebanking.ApiClient("Nordea", connector_settings=nordea_settings())  # Create client instance.
@@ -31,12 +37,12 @@ def main():
 
     auth_url = auth_api.get_auth(state="test").url  # state to pass to redirect URL
 
-    redirected_url = util.read_redirected_url(auth_url, REDIRECT_URL)
-    parsed_query = util.parse_redirected_url(redirected_url)  # calling helper functions for CLI interaction
-    logging.info("Parsed query: %s", parsed_query)
+    redirected_url = read_redirected_url(auth_url, REDIRECT_URL)
+    query_params = auth_api.parse_redirect_url(redirected_url)
+    logging.info("Parsed query: %s", query_params)
 
     token = auth_api.make_token(grant_type="authorization_code",  # grant type, MUST be set to "authorization_code"
-                                code=parsed_query.get("code"))
+                                code=query_params.code)
     logging.info("Token: %s", token)
 
     aisp_api = enablebanking.AISPApi(api_client)  # api_client has already accessToken and refreshToken applied after call to makeToken()

@@ -2,8 +2,6 @@ import logging
 
 import enablebanking
 
-import util
-
 logging.getLogger().setLevel(logging.INFO)
 
 REDIRECT_URL = "https://enablebanking.com"  # PUT YOUR REDIRECT URI HERE
@@ -26,6 +24,14 @@ def alior_settings():
         "paymentAuthRedirectUri": REDIRECT_URL,  # URI where clients are redirected to after payment authorization.
         "paymentAuthState": "test"  # This value returned to paymentAuthRedirectUri after payment authorization.
     }
+
+def read_redirected_url(url, redirect_url):
+    print("Please, open this page in browser: " + url)
+    print("Login, authenticate and copy paste back the URL where you got redirected.")
+    print(f"URL: (starts with %s): " % redirect_url)
+
+    redirected_url = input()  # insert your url
+    return redirected_url
 
 
 def main():
@@ -61,14 +67,15 @@ def main():
     request_creation = pisp_api.make_payment_request(payment_request_resource)
     logging.info("Request creation: %s", request_creation)
 
-    redirected_url = util.read_redirected_url(request_creation.links.consent_approval.href, REDIRECT_URL)  # calling helper functions for CLI interaction
-    parsed_query_params = util.parse_redirected_url(redirected_url)
+    redirected_url = read_redirected_url(request_creation.links.consent_approval.href, REDIRECT_URL)  # calling helper functions for CLI interaction
+    auth_api = enablebanking.AuthApi(api_client)  # Create authentication interface.
+    parsed_query_params = auth_api.parse_redirect_url(redirected_url)
     logging.info("Query params: %s", parsed_query_params)
 
     payment_request_confirmation = pisp_api.make_payment_request_confirmation(
         request_creation.payment_request_resource_id,
         confirmation=enablebanking.PaymentRequestConfirmation(
-            psu_authentication_factor=parsed_query_params.get("code"),
+            psu_authentication_factor=parsed_query_params.code,
             payment_request=payment_request_resource
         ))
     logging.info("Payment request confirmation: %s", payment_request_confirmation)
