@@ -1,3 +1,4 @@
+import datetime
 import logging
 import readline  # imported to allow pasting long lines into `input` function
 import time
@@ -8,12 +9,12 @@ import enablebanking
 
 logging.getLogger().setLevel(logging.INFO)
 
-REDIRECT_URL = "https://enablebanking.com"  # PUT YOUR REDIRECT URI HERE
+REDIRECT_URL = "https://enablebanking.com/auth_redirect"  # PUT YOUR REDIRECT URI HERE
 
 
 CONNECTOR_NAME = "Nordea"
-CONNECTOR_COUNTRY = "SE"
-NORDEA_SETTINGS = {
+CONNECTOR_COUNTRY = "FI"
+CONNECTOR_SETTINGS = {
     "sandbox": True,
     "consentId": None,
     "accessToken": None,
@@ -24,7 +25,7 @@ NORDEA_SETTINGS = {
     "clientSecret": "client_secret_here",  # API Client Secret
     "signKeyPath": "/path/to/private/key.key",  # Path or URI to QSeal private key in PEM format
     "language": None,
-    "paymentAuthRedirectUri": "https://enablebanking.com/auth_redirect",
+    "paymentAuthRedirectUri": REDIRECT_URL,
     "paymentAuthState": "test",
 }
 
@@ -54,10 +55,20 @@ def main():
     )  # get meta information for current connector
 
     api_client = enablebanking.ApiClient(
-        "Nordea", connector_settings=NORDEA_SETTINGS
+        CONNECTOR_NAME, connector_settings=CONNECTOR_SETTINGS
     )  # Create client instance.
 
     auth_api = enablebanking.AuthApi(api_client)  # Create authentication interface.
+
+    client_info = enablebanking.ClientInfo()
+    connector_psu_headers = api_meta.required_psu_headers
+    if "psuIpAddress" in connector_psu_headers:
+        client_info.psu_ip_address = "10.10.10.10"
+
+    if "psuUserAgent" in connector_psu_headers:
+        client_info.psu_user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.1 Safari/605.1.15"
+
+    auth_api.set_client_info(client_info=client_info)
 
     get_auth_params: Dict[str, Any] = {"state": str(uuid.uuid4())}
     if api_meta.auth_info[0].info.access:
@@ -107,7 +118,11 @@ def main():
 
     if api_meta.modify_consents_info[0].info.before_accounts:
         # bank requires to create a consent explicitly before accessing list of accounts
-        access = enablebanking.Access()
+        access = enablebanking.Access(
+            valid_until=(
+                datetime.datetime.now() + datetime.timedelta(days=89)
+            ).strftime("%Y-%m-%d")
+        )
         consent = aisp_api.modify_consents(access=access)
         logging.debug(f"Consent: {consent}")
         try:
@@ -127,7 +142,12 @@ def main():
             enablebanking.AccountIdentification(iban=acc.account_id.iban)
             for acc in accounts.accounts
         ]
-        access = enablebanking.Access(accounts=account_ids)
+        access = enablebanking.Access(
+            accounts=account_ids,
+            valid_until=(
+                datetime.datetime.now() + datetime.timedelta(days=89)
+            ).strftime("%Y-%m-%d"),
+        )
         consent = aisp_api.modify_consents(access=access)
         logging.debug(f"Consent: {consent}")
         try:
