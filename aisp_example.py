@@ -70,10 +70,12 @@ def main():
 
     auth_api.set_client_info(client_info=client_info)
 
+    access = enablebanking.Access(
+        valid_until=(datetime.datetime.now() + datetime.timedelta(days=89))
+    )
     get_auth_params: Dict[str, Any] = {"state": str(uuid.uuid4())}
     if api_meta.auth_info[0].info.access:
-        # you can pass additional parameters to Access model and customie requested consent from a PSU
-        get_auth_params["access"] = enablebanking.Access()
+        get_auth_params["access"] = access
     if api_meta.auth_info[0].info.user_id_required:
         get_auth_params["user_id"] = "some_id"
     if api_meta.auth_info[0].info.password_required:
@@ -102,7 +104,7 @@ def main():
                     code="",
                     auth_env=auth_response.env,
                 )
-            except enablebanking.UnauthorizedException:
+            except enablebanking.MakeTokenException as e:
                 logging.debug(
                     f"Failed to get authorization code, sleeping for {sleep_time} seconds"
                 )
@@ -118,11 +120,6 @@ def main():
 
     if api_meta.modify_consents_info[0].info.before_accounts:
         # bank requires to create a consent explicitly before accessing list of accounts
-        access = enablebanking.Access(
-            valid_until=(
-                datetime.datetime.now() + datetime.timedelta(days=89)
-            ).strftime("%Y-%m-%d")
-        )
         consent = aisp_api.modify_consents(access=access)
         logging.debug(f"Consent: {consent}")
         try:
@@ -142,12 +139,7 @@ def main():
             enablebanking.AccountIdentification(iban=acc.account_id.iban)
             for acc in accounts.accounts
         ]
-        access = enablebanking.Access(
-            accounts=account_ids,
-            valid_until=(
-                datetime.datetime.now() + datetime.timedelta(days=89)
-            ).strftime("%Y-%m-%d"),
-        )
+        access.accounts = account_ids
         consent = aisp_api.modify_consents(access=access)
         logging.debug(f"Consent: {consent}")
         try:
