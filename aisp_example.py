@@ -76,10 +76,6 @@ def main():
     get_auth_params: Dict[str, Any] = {"state": str(uuid.uuid4())}
     if api_meta.auth_info[0].info.access:
         get_auth_params["access"] = access
-    if api_meta.auth_info[0].info.user_id_required:
-        get_auth_params["user_id"] = "some_id"
-    if api_meta.auth_info[0].info.password_required:
-        get_auth_params["password"] = "some_password"
     auth_response = auth_api.get_auth(**get_auth_params)
 
     make_token_response = None
@@ -90,7 +86,7 @@ def main():
         logging.info("Parsed query: %s", query_params)
         make_token_response = auth_api.make_token(
             "authorization_code",  # grant type, MUST be set to "authorization_code"
-            query_params.code,
+            code=query_params.code,
             auth_env=auth_response.env,
         )
     else:
