@@ -1,6 +1,7 @@
 # Open Banking Python Examples
 
-This repository contains sample Python code showing how to use Open banking APIs (PSD2 AISP &amp; PISP) using enable:Banking Python library.
+This repository contains sample Python code showing how to use Open banking APIs (PSD2 AISP &amp; PISP) using Python library
+of Enable Banking aggregation core.
 
 ## Quickstart
 
